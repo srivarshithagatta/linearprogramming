@@ -80,7 +80,7 @@ def solve_graphical(request):
 
 def plot_constraints(A, b, feasible_region, optimal_vertex):
     x = np.linspace(0, max(b), 400)
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(8, 6))
 
     for coeff, rhs in zip(A, b):
         if coeff[1] != 0:
