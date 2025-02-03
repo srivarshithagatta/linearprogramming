@@ -1,2 +1,128 @@
-{%extends 'base.html'%}
-{% load static%}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Programming Solver</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <script>
+        function updateForm() {
+            const numVariables = parseInt(document.getElementById('num_variables').value);
+            const numConstraints = parseInt(document.getElementById('num_constraints').value);
+
+            // Clear existing variable and constraint inputs
+            const variablesContainer = document.getElementById('variables-container');
+            const constraintsContainer = document.getElementById('constraints-container');
+            variablesContainer.innerHTML = '';
+            constraintsContainer.innerHTML = '';
+
+            // Add inputs for variables
+            for (let i = 0; i < numVariables; i++) {
+                let label = document.createElement('label');
+                label.setAttribute('for', `obj_${i}`);
+                label.innerText = `Objective Coefficient for x${i + 1}:`;
+                let input = document.createElement('input');
+                input.type = 'number';
+                input.id = `obj_${i}`;
+                input.name = `obj_${i}`;
+                input.required = true;
+
+                variablesContainer.appendChild(label);
+                variablesContainer.appendChild(input);
+            }
+
+            // Add inputs for constraints
+            for (let i = 0; i < numConstraints; i++) {
+                let constraintDiv = document.createElement('div');
+                constraintDiv.classList.add('constraint');
+
+                for (let j = 0; j < numVariables; j++) {
+                    let label = document.createElement('label');
+                    label.setAttribute('for', `constraint_${i}_${j}`);
+                    label.innerText = `Coefficient of x${j + 1} for constraint ${i + 1}:`;
+                    let input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `constraint_${i}_${j}`;
+                    input.name = `constraint_${i}_${j}`;
+                    input.required = true;
+
+                    constraintDiv.appendChild(label);
+                    constraintDiv.appendChild(input);
+                }
+
+                let rhsLabel = document.createElement('label');
+                rhsLabel.setAttribute('for', `rhs_${i}`);
+                rhsLabel.innerText = `Right-hand side value for constraint ${i + 1}:`;
+                let rhsInput = document.createElement('input');
+                rhsInput.type = 'number';
+                rhsInput.id = `rhs_${i}`;
+                rhsInput.name = `rhs_${i}`;
+                rhsInput.required = true;
+
+                constraintDiv.appendChild(rhsLabel);
+                constraintDiv.appendChild(rhsInput);
+
+                constraintsContainer.appendChild(constraintDiv);
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Linear Programming Solver</h1>
+        
+        <form method="POST" action="{% url 'solve_lp' %}">
+            {% csrf_token %}
+            
+            <label for="method">Select Method:</label>
+            <select id="method" name="method" required>
+                <option value="simplex">Simplex Method</option>
+                <option value="graphical">Graphical Method</option>
+                <option value="north_west">North-West Corner Method</option>
+                <option value="vogel">Vogel’s Approximation Method</option>
+                <option value="least_cell_cost">Least Cost Cell Method</option>
+            </select>
+
+            <label for="optimization">Minimize or Maximize:</label>
+            <select id="optimization" name="optimization" required>
+                <option value="minimize">Minimize</option>
+                <option value="maximize">Maximize</option>
+            </select>
+
+            <label for="num_variables">Number of Variables:</label>
+            <input type="number" id="num_variables" name="num_variables" min="1" required onchange="updateForm()">
+
+            <label for="num_constraints">Number of Constraints:</label>
+            <input type="number" id="num_constraints" name="num_constraints" min="1" required onchange="updateForm()">
+
+            <div id="variables-container"></div>
+
+            <div id="constraints-container"></div>
+
+            <button type="submit">Solve</button>
+        </form>
+
+        {% if solution %}
+            <h3>Optimal Solution:</h3>
+            <pre>{{ solution }}</pre>
+        {% endif %}
+
+        {% if graph %}
+    <img src="{{ graph }}" alt="Graph" />
+{% else %}
+    <p>No graph to display.</p>
+{% endif %}
+
+        
+        {% if error %}
+            <h3>Error:</h3>
+            <p>{{ error }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>
+{% endblock %}
