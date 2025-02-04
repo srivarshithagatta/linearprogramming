@@ -1,5 +1,5 @@
 from django.shortcuts import render
-
+from scipy.optimize import linprog
 from matplotlib.patches import Polygon
 import numpy as np
 import matplotlib
@@ -24,6 +24,8 @@ def solve_lp(request):
         
         if method == "graphical":
             return solve_graphical(request)
+        elif method == "simplex":
+            return solve_simplex(request)
         else:
             return render(request, "solve.html", {"error": "Invalid method selected."})
 
@@ -77,7 +79,30 @@ def solve_graphical(request):
         "solution": f"Optimal vertex: {optimal_vertex}, Objective function value: {optimal_value}",
         "graph": img
     })
+def solve_simplex(request):
+    num_variables = int(request.POST.get("num_variables", 0))
+    c = [-float(request.POST.get(f"obj_{i}", 0)) for i in range(num_variables)]  # Convert to minimization
+    
+    num_constraints = int(request.POST.get("num_constraints", 0))
+    A = []
+    b = []
+    for i in range(num_constraints):
+        A.append([float(request.POST.get(f"constraint_{i}_{j}", 0)) for j in range(num_variables)])
+        b.append(float(request.POST.get(f"rhs_{i}", 0)))
 
+    result = linprog(c, A_ub=A, b_ub=b, method='highs')
+    
+    if result.success:
+        optimal_solution = result.x
+        optimal_value = -result.fun
+        formatted_solution = [f"{value:.2f}" for value in optimal_solution]
+        formatted_value = f"{optimal_value:.2f}"
+        return render(request, "solve.html", {
+            "solution": f"Optimal solution: {formatted_solution},\n\nObjective function value: {formatted_value}"
+        })
+    else:
+        return render(request, "solve.html", {"solution": "No feasible solution found."})
+        
 def plot_constraints(A, b, feasible_region, optimal_vertex):
     x = np.linspace(0, max(b), 400)
     plt.figure(figsize=(8, 6))

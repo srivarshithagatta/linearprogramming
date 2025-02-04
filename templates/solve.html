@@ -11,65 +11,76 @@
     <link rel="stylesheet" href="{% static 'style.css' %}">
     <script>
         function updateForm() {
-            const numVariables = parseInt(document.getElementById('num_variables').value);
-            const numConstraints = parseInt(document.getElementById('num_constraints').value);
-
-            // Clear existing variable and constraint inputs
+            const method = document.getElementById('method').value;
+            const numVariables = parseInt(document.getElementById('num_variables').value) || 0;
+            const numConstraints = parseInt(document.getElementById('num_constraints').value) || 0;
             const variablesContainer = document.getElementById('variables-container');
             const constraintsContainer = document.getElementById('constraints-container');
+            const transportContainer = document.getElementById('transport-container');
+    
+            // Clear existing inputs
             variablesContainer.innerHTML = '';
             constraintsContainer.innerHTML = '';
-
-            // Add inputs for variables
-            for (let i = 0; i < numVariables; i++) {
-                let label = document.createElement('label');
-                label.setAttribute('for', `obj_${i}`);
-                label.innerText = `Objective Coefficient for x${i + 1}:`;
-                let input = document.createElement('input');
-                input.type = 'number';
-                input.id = `obj_${i}`;
-                input.name = `obj_${i}`;
-                input.required = true;
-
-                variablesContainer.appendChild(label);
-                variablesContainer.appendChild(input);
-            }
-
-            // Add inputs for constraints
-            for (let i = 0; i < numConstraints; i++) {
-                let constraintDiv = document.createElement('div');
-                constraintDiv.classList.add('constraint');
-
-                for (let j = 0; j < numVariables; j++) {
-                    let label = document.createElement('label');
-                    label.setAttribute('for', `constraint_${i}_${j}`);
-                    label.innerText = `Coefficient of x${j + 1} for constraint ${i + 1}:`;
-                    let input = document.createElement('input');
-                    input.type = 'number';
-                    input.id = `constraint_${i}_${j}`;
-                    input.name = `constraint_${i}_${j}`;
-                    input.required = true;
-
-                    constraintDiv.appendChild(label);
-                    constraintDiv.appendChild(input);
+            transportContainer.innerHTML = '';
+    
+            if (method === "simplex" || method === "graphical") {
+                variablesContainer.style.display = "block";
+                constraintsContainer.style.display = "block";
+                transportContainer.style.display = "none";
+    
+                // Create Objective Coefficients Inputs
+                for (let i = 0; i < numVariables; i++) {
+                    let div = document.createElement('div');
+                    div.innerHTML = `<label>Objective Coefficient for x${i + 1}:</label>
+                                    <input type="number" name="obj_${i}" required>`;
+                    variablesContainer.appendChild(div);
                 }
-
-                let rhsLabel = document.createElement('label');
-                rhsLabel.setAttribute('for', `rhs_${i}`);
-                rhsLabel.innerText = `Right-hand side value for constraint ${i + 1}:`;
-                let rhsInput = document.createElement('input');
-                rhsInput.type = 'number';
-                rhsInput.id = `rhs_${i}`;
-                rhsInput.name = `rhs_${i}`;
-                rhsInput.required = true;
-
-                constraintDiv.appendChild(rhsLabel);
-                constraintDiv.appendChild(rhsInput);
-
-                constraintsContainer.appendChild(constraintDiv);
+    
+                // Create Constraint Inputs
+                for (let i = 0; i < numConstraints; i++) {
+                    let constraintDiv = document.createElement('div');
+                    constraintDiv.classList.add('constraint');
+    
+                    for (let j = 0; j < numVariables; j++) {
+                        let div = document.createElement('div');
+                        div.innerHTML = `<label>Coefficient of x${j + 1} for constraint ${i + 1}:</label>
+                                         <input type="number" name="constraint_${i}_${j}" required>`;
+                        constraintDiv.appendChild(div);
+                    }
+    
+                    let rhsDiv = document.createElement('div');
+                    rhsDiv.innerHTML = `<label>Right-hand side for constraint ${i + 1}:</label>
+                                        <input type="number" name="rhs_${i}" required>`;
+                    constraintDiv.appendChild(rhsDiv);
+    
+                    constraintsContainer.appendChild(constraintDiv);
+                }
+            } else {
+                variablesContainer.style.display = "none";
+                constraintsContainer.style.display = "none";
+                transportContainer.style.display = "block";
+    
+                transportContainer.innerHTML = `
+                    <label>Enter Supply Values (comma-separated):</label>
+                    <input type="text" name="supply" required>
+    
+                    <label>Enter Demand Values (comma-separated):</label>
+                    <input type="text" name="demand" required>
+    
+                    <label>Enter Cost Matrix (comma-separated rows, semicolon-separated columns):</label>
+                    <input type="text" name="cost_matrix" required>
+                `;
             }
         }
+    
+        // Run updateForm() when the method or inputs change
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById('method').addEventListener('change', updateForm);
+            document.getElementById('num_variables').addEventListener('input', updateForm);
+            document.getElementById('num_constraints').addEventListener('input', updateForm);
+        });
     </script>
+    
 </head>
 <body>
     <div class="container">
@@ -102,6 +113,8 @@
             <div id="variables-container"></div>
 
             <div id="constraints-container"></div>
+            <div id="transport-container" style="display: none;"></div>
+
 
             <div style="text-align: center; margin-top: 20px;">
                 <button class="submit" type="submit" style="height: 60px; width: 120px; font-size: 17px;">Solve</button>
@@ -115,8 +128,7 @@
 
         {% if graph %}
     <img src="{{ graph }}" alt="Graph" />
-{% else %}
-    <p>No graph to display.</p>
+
 {% endif %}
 
         
